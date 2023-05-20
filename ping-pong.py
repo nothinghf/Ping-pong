@@ -1,66 +1,116 @@
-from pygame import *
+import sys, pygame, random
+import time
 
-class Gamesprite(sprite.Sprite):
-    def __init__(self, img, speed, x, y):
-        super().__init__()
-        self.image = transform.scale(image.load(img), (100,100))
-        self.speed = speed
+pygame.init()
+
+size = width, height = 500, 500
+screen = pygame.display.set_mode(size)
+
+
+class Player1(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(self.image, (20, 100))
+        self.image = pygame.transform.scale(image.load("кега.jpg"), (100,100))
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-    def reset(self):
-        window.blit(self.image, (self.rect.x, self.rect.y))
+        self.rect.center = (15, 250)
+        self.totalLives = 5
 
-class Player1(Gamesprite):
-    def __init__(self, img, speed, x, y):
-        super().__init__(img, speed, x, y)
-    def moving(self):
-        keys_pressed = key.get_pressed()
+class Player2(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(image.load("кега.jpg"), (100,100))
+        self.image = pygame.transform.scale(self.image, (20, 100))
+        self.rect = self.image.get_rect()
+        self.rect.center = (485, 250)
+        self.totalLives = 5
 
-        if keys_pressed[K_a] and self.rect.y > 5:
-            self.rect.x -= self.speed
-        if keys_pressed[K_a] and self.rect.y > 630:
-            self.rect.x += self.speed
+class Ball(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(image.load("собака.jpg"), (100,100))
+        self.image = pygame.transform.scale(self.image, (25, 25))
+        self.rect = self.image.get_rect()
+        self.rect.center = (255, 250)
 
-window = display.set_mode((700, 500))
-class Player2(Gamesprite):
-    def __init__(self, img, speed, x, y):
-        super().__init__(img, speed, x, y)
-    def moving(self):
-        keys_pressed = key.get_pressed()
+leftpad = Player1()
+rightpad = Player2()
+ball = Ball()
 
-        if keys_pressed[K_a] and self.rect.y > 5:
-            self.rect.x -= self.speed
-        if keys_pressed[K_a] and self.rect.y > 630:
-            self.rect.x += self.speed
-class Ball(Gamesprite):
-    def __init__(self, img, speed, x, y):
-        super().__init__(img, speed, x, y)
-    def moving(self):
-        speed_x = 3
-        speed_y = 3
-background = transform.scale(image.load("sobaka-i-kega-mem-768x560.png"), (700,500))
-player = Player1("собака.jpg", 40, 10, 10)
-player2 = Player2("собака.jpg", 40, 20, 20)
-ball = Ball("кега.jpg", 3, 50, 50)
-game = True
-def finish():
-    game = False
-while game:
+paddles = pygame.sprite.Group()
+paddles.add(leftpad)
+paddles.add(rightpad)
 
-    window.blit(background,(0,0))
+balls = pygame.sprite.Group()
+balls.add(ball)
 
-    if finish != True:
-        rect.x += speed_x
-        rect.y += speed_y
+toQuit = 0
+clock = pygame.time.Clock()
+ballspeed = [2, 3]
+while 1:
+    clock.tick(60)
+    screen.fill((0,0,0))
+    paddles.draw(screen)
+    balls.draw(screen)
+    myFont = pygame.font.SysFont("Times New Roman", 18)
+    numsLivesDraw = myFont.render(str(leftpad.totalLives), True, (250, 250, 250))
+    numsLivesDrawRight = myFont.render(str(rightpad.totalLives), True, (250, 250, 250))
+    screen.blit(numsLivesDraw, (30,30))
+    screen.blit(numsLivesDrawRight, (400,30))
+    if leftpad.totalLives <= 0 or rightpad.totalLives <= 0:
+        letter = pygame.font.SysFont("Times New Roman", 30)
+        message = 'Игра окончена'
+        gameOver = letter.render(message, True, (250, 250, 250))
+        screen.blit(gameOver, (150,100))
+        toQuit = 1
         
-        if sprite.collide_rect(Player1, Ball):
-            if sprite.collide_rect(Player2, Ball):
+    pygame.display.flip()
 
-                speed_x += -1
+    key = pygame.key.get_pressed()
+    if key[pygame.K_w]:
+        if leftpad.rect.top > 5:
+            leftpad.rect = leftpad.rect.move([0, -5])
+    if key[pygame.K_s]:
+        if leftpad.rect.bottom < 495:
+            leftpad.rect = leftpad.rect.move([0, 5])
 
-    for e in event.get():
-        if e.type == QUIT:
-            game = False
+    if key[pygame.K_UP]:
+        if rightpad.rect.top > 5:
+            rightpad.rect = rightpad.rect.move([0, -5])
+    if key[pygame.K_DOWN]:
+        if rightpad.rect.bottom < 495:
+            rightpad.rect = rightpad.rect.move([0, 5])
 
-    display.update()
+    if ball.rect.top <= 5:
+        ballspeed[1] = ballspeed[1] * -1
+    if ball.rect.bottom >= 495:
+        ballspeed[1] = ballspeed[1] * -1
+
+    if ball.rect.left <= 0:
+        leftpad.totalLives = leftpad.totalLives -1
+        ball.rect.center = (250, 250)
+        ballspeed = [2, 4]
+        time.sleep(1)
+    if ball.rect.right >= 500:
+        rightpad.totalLives = rightpad.totalLives -1
+        ball.rect.center = (250, 250)
+        ballspeed = [-2, 4]
+        time.sleep(1)
+
+    leftcollide = pygame.sprite.spritecollideany(leftpad, balls)
+    rightcollide = pygame.sprite.spritecollideany(rightpad, balls)
+    if leftcollide != None:
+        ballspeed[0] = ballspeed[0] * -1
+        ballspeed[0] = ballspeed[0] + 0.5
+    if rightcollide != None:
+        ballspeed[0] = ballspeed[0] * -1
+        ballspeed[0] = ballspeed[0] - 0.5
+    ball.rect = ball.rect.move(ballspeed)
+    
+    if toQuit == 1:
+        time.sleep(5)
+        sys.exit()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
